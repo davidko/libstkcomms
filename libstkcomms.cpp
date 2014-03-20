@@ -58,6 +58,10 @@ int stkComms_init(stkComms_t* comms)
 {
   comms->isConnected = false;
   comms->programComplete = 0;
+#if defined (_WIN32) or defined (_MSYS)
+  memset(&comms->ov, 0, sizeof(OVERLAPPED));
+  comms->ov.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+#endif
   MUTEX_NEW(comms->progressLock);
   MUTEX_INIT(comms->progressLock);
   COND_NEW(comms->progressCond);
@@ -207,6 +211,9 @@ int stkComms_connectWithTTY(stkComms_t* comms, const char* ttyfilename)
       OPEN_EXISTING,
       FILE_FLAG_OVERLAPPED,
       0 );
+#ifdef VERBOSE
+  fprintf(stderr, "New commhandle at: 0x%X -> 0x%X\n", &comms->commHandle, comms->commHandle);
+#endif
   free(tty);
   if(comms->commHandle == INVALID_HANDLE_VALUE) {
     //fprintf(stderr, "Error connecting to COM port: %s\n", ttyfilename);
@@ -849,11 +856,11 @@ int stkComms_sendBytes(stkComms_t* comms, void* buf, size_t len)
   }
 
 #ifdef VERBOSE
-  printf("SEND: ");
+  fprintf(stderr, "SEND: ");
   for(int i = 0; i < len; i++) {
-    printf("0x%02X ", ((uint8_t*)buf)[i]);
+    fprintf(stderr, "0x%02X ", ((uint8_t*)buf)[i]);
   }
-  printf("\n");
+  fprintf(stderr, "\n");
 #endif
 #ifndef _WIN32
   if(write(comms->socket, buf, len) == -1) {
@@ -887,6 +894,10 @@ int stkComms_recvBytes(stkComms_t* comms, uint8_t* buf, size_t expectedBytes, si
   int len = 0;
   int rc;
   uint8_t *mybuf = (uint8_t*)malloc(size*sizeof(uint8_t));
+
+#ifdef VERBOSE
+  fprintf(stderr, "Trying to receive bytes...\n");
+#endif
   
   while(len < expectedBytes) {
 #ifndef _WIN32
@@ -895,17 +906,35 @@ int stkComms_recvBytes(stkComms_t* comms, uint8_t* buf, size_t expectedBytes, si
     if(comms->connectionType == CONNECT_SOCKET) {
       rc = recvfrom(comms->socket, (char*)mybuf, size, 0, (struct sockaddr*)0, 0);
     } else {
-      ReadFile(
+#ifdef VERBOSE
+      fprintf(stderr, "Reading from commhandle: 0x%X -> 0x%X\n", 
+          &comms->commHandle,
+          comms->commHandle);
+#endif
+      SetLastError(0);
+      bool success = ReadFile(
           comms->commHandle,
           (LPVOID)mybuf,
           expectedBytes,
           NULL,
           &comms->ov);
+#ifdef VERBOSE
+      if(!success) {
+        fprintf(stderr, "ReadFile Error: %d\n", GetLastError());
+      }
+#endif
       DWORD bytes;
+      SetLastError(0);
       rc = GetOverlappedResult( comms->commHandle,
           &comms->ov,
           &bytes,
           TRUE);
+#ifdef VERBOSE
+      fprintf(stderr, "Received overlapped result. %d:%d\n", rc, bytes);
+      if(rc == 0) {
+        fprintf(stderr, "Error: %d\n", GetLastError());
+      }
+#endif
       if(rc) rc = bytes;
       else rc = -1;
     }

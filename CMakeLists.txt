@@ -11,12 +11,6 @@ include_directories(${LIBBAROBO_INCLUDE_DIRS})
 if(CMAKE_HOST_WIN32)
   # FIXME hack--put these cmake scripts in a proper place (we need a
   # barobo_common repo) 
-  if(NOT WINSDK_INCLUDE_PATH)
-    include("../findwindowssdk.cmake")
-  endif(NOT WINSDK_INCLUDE_PATH)
-  if(NOT MSVC_INCLUDE_PATH)
-    include("../findmsvc.cmake")
-  endif(NOT MSVC_INCLUDE_PATH)
 
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -idirafter \"${WINSDK_INCLUDE_PATH}\" -idirafter \"${MSVC_INCLUDE_PATH}\"")
 

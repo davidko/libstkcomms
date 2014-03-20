@@ -76,6 +76,9 @@ typedef struct stkComms_s
   double progress;
   char* lockfileName;
 
+  robot_type_t formFactor;
+  connection_type_t connectionType;
+
 #if !defined (_MSYS)
 #ifdef _WIN32
 #ifdef ENABLE_BLUETOOTH
@@ -87,8 +90,6 @@ typedef struct stkComms_s
   struct sockaddr_rc addr;
 #endif
 #endif
-  robot_type_t formFactor;
-  connection_type_t connectionType;
 } stkComms_t;
 #else
 struct stkComms_s;

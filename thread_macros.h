@@ -110,9 +110,6 @@ if (!test){ \
   ResetEvent( *cond ); \
 action; \
 WaitForSingleObject( *cond, INFINITE)
-#define SIGNAL(cond, mutex, action) \
-  action; \
-SetEvent( *cond )
 #define COND_BROADCAST(cond) \
   PulseEvent(*cond)
 #define COND_SIGNAL(cond) \
