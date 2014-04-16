@@ -376,7 +376,10 @@ double stkComms_getProgress(stkComms_t* comms)
 
 void stkComms_setProgress(stkComms_t* comms, double progress)
 {
+  MUTEX_LOCK(comms->progressLock);
 	comms->progress = progress;
+  COND_SIGNAL(comms->progressCond);
+  MUTEX_UNLOCK(comms->progressLock);
 }
 
 int stkComms_isProgramComplete(stkComms_t* comms) 
@@ -664,10 +667,7 @@ int stkComms_progHexFile(stkComms_t* comms, const char* filename)
     stkComms_progPage(comms, buf, i);
     address += pageSize/2;
     /* Update the progress tracker */
-    MUTEX_LOCK(comms->progressLock);
-    comms->progress = 0.5 * ((double)address*2) / (double)hexFile_len(file);
-    COND_SIGNAL(comms->progressCond);
-    MUTEX_UNLOCK(comms->progressLock);
+    stkComms_setProgress(comms, 0.5 * ((double)address*2) / (double)hexFile_len(file));
   }
   hexFile_destroy(file);
   free(file);
@@ -697,15 +697,9 @@ int stkComms_checkFlash(stkComms_t* comms, const char* filename)
       return -1;
     }
     /* Update the progress tracker */
-    MUTEX_LOCK(comms->progressLock);
-    comms->progress = 0.5 + 0.5 * ((double)i*2) / (double)hexFile_len(hf);
-    COND_SIGNAL(comms->progressCond);
-    MUTEX_UNLOCK(comms->progressLock);
+    stkComms_setProgress(comms, 0.5 + 0.5 * ((double)i*2) / (double)hexFile_len(hf));
   }
-  MUTEX_LOCK(comms->progressLock);
-  comms->progress = 1;
-  COND_SIGNAL(comms->progressCond);
-  MUTEX_UNLOCK(comms->progressLock);
+  stkComms_setProgress(comms, 1);
   return 0;
 }
 
