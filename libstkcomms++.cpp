@@ -77,76 +77,41 @@ int CStkComms::setSocket(int socket)
   return stkComms_setSocket(_comms, socket);
 }
 
-int CStkComms::programAll(const char* hexFileName)
-{
-  if(handshake()) {
-    THROW;
-    return -1;
-  }
-  if(setDevice()) {
-    THROW;
-    return -1;
-  }
-  if(setDeviceExt()) {
-    THROW;
-    return -1;
-  }
-  if(enterProgMode()) {
-    THROW;
-    return -1;
-  }
-  if(checkSignature()) {
-    THROW;
-    return -1;
-  }
-  /*
-  if(progFuses()) {
-    THROW;
-    return -1;
-  }
-  */
-  if(progHexFile(hexFileName)) {
-    THROW;
-    return -1;
-  }
-  if(checkFlash(hexFileName)) {
-    THROW;
-    return -1;
-  }
-  if(leaveProgMode()) {
-    THROW;
-    return -1;
-  }
-	stkComms_setProgress(_comms, 1.0);
-	stkComms_setProgramComplete(_comms, 1);
-  return 0;  
-}
-
 int CStkComms::programAll(const char* hexFileName, int hwRev)
 {
   if(handshake()) {
     THROW;
-    printf("programming failed %s:%d\n", __FILE__, __LINE__);
+    if (hwRev) {
+      printf("programming failed %s:%d\n", __FILE__, __LINE__);
+    }
     return -1;
   }
   if(setDevice()) {
     THROW;
-    printf("programming failed %s:%d\n", __FILE__, __LINE__);
+    if (hwRev) {
+      printf("programming failed %s:%d\n", __FILE__, __LINE__);
+    }
     return -1;
   }
   if(setDeviceExt()) {
     THROW;
-    printf("programming failed %s:%d\n", __FILE__, __LINE__);
+    if (hwRev) {
+      printf("programming failed %s:%d\n", __FILE__, __LINE__);
+    }
     return -1;
   }
   if(enterProgMode()) {
     THROW;
-    printf("programming failed %s:%d\n", __FILE__, __LINE__);
+    if (hwRev) {
+      printf("programming failed %s:%d\n", __FILE__, __LINE__);
+    }
     return -1;
   }
   if(checkSignature()) {
     THROW;
-    printf("programming failed %s:%d\n", __FILE__, __LINE__);
+    if (hwRev) {
+      printf("programming failed %s:%d\n", __FILE__, __LINE__);
+    }
     return -1;
   }
   /*
@@ -155,27 +120,35 @@ int CStkComms::programAll(const char* hexFileName, int hwRev)
     return -1;
   }
   */
-  if(progFuses()) {
-    THROW;
-    printf("programming failed %s:%d\n", __FILE__, __LINE__);
-    return -1;
+  if (hwRev) {
+    if(progFuses()) {
+      THROW;
+      printf("programming failed %s:%d\n", __FILE__, __LINE__);
+      return -1;
+    }
   }
   if(progHexFile(hexFileName)) {
     THROW;
-    printf("programming failed %s:%d\n", __FILE__, __LINE__);
+    if (hwRev) {
+      printf("programming failed %s:%d\n", __FILE__, __LINE__);
+    }
     return -1;
   }
   if(checkFlash(hexFileName)) {
     THROW;
-    printf("programming failed %s:%d\n", __FILE__, __LINE__);
+    if (hwRev) {
+      printf("programming failed %s:%d\n", __FILE__, __LINE__);
+    }
     return -1;
   }
   if(leaveProgMode()) {
     THROW;
-    printf("programming failed %s:%d\n", __FILE__, __LINE__);
+    if (hwRev) {
+      printf("programming failed %s:%d\n", __FILE__, __LINE__);
+    }
     return -1;
   }
-	stkComms_setProgress(_comms, 1.1);
+	stkComms_setProgress(_comms, hwRev ? 1.1 : 1.0);
 	stkComms_setProgramComplete(_comms, 1);
   return 0;  
 }
@@ -189,25 +162,8 @@ struct programAllThreadArg{
 void* programAllThread(void* arg)
 {
   programAllThreadArg *a = (programAllThreadArg*)arg;
-  if(a->hwRev == 0) {
-    a->stkComms->programAll(a->hexFileName);
-  } else {
-    a->stkComms->programAll(a->hexFileName, a->hwRev);
-  }
+  a->stkComms->programAll(a->hexFileName, a->hwRev);
   return NULL;
-}
-
-int CStkComms::programAllAsync(const char* hexFileName)
-{
-  THREAD_T thread;
-  struct programAllThreadArg *a;
-  a = (struct programAllThreadArg*)malloc(sizeof(struct programAllThreadArg));
-  a->hexFileName = hexFileName;
-  a->stkComms = this;
-  a->hwRev = 0;
-	stkComms_setProgress(_comms, 0.01);
-  THREAD_CREATE(&thread, programAllThread, a);
-  return 0;
 }
 
 int CStkComms::programAllAsync(const char* hexFileName, int hwRev)

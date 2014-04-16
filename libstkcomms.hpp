@@ -45,10 +45,8 @@ class CStkComms
   int connect(const char addr[]);
   int connectWithTTY(const char* ttyfilename);
   int setSocket(int socket);
-  int programAll(const char* hexFileName);
-  int programAll(const char* hexFileName, int hwRev);
-  int programAllAsync(const char* hexFileName);
-  int programAllAsync(const char* hexFileName, int hwRev);
+  int programAll(const char* hexFileName, int hwRev = 0);
+  int programAllAsync(const char* hexFileName, int hwRev = 0);
   double getProgress();
   int isProgramComplete();
   int disconnect();
