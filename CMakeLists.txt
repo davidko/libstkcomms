@@ -1,12 +1,12 @@
-# The ODE Library
-
-cmake_minimum_required(VERSION 2.6)
-#include_directories(../opende/sys/include)
-
+cmake_minimum_required(VERSION 2.8.12)
 project(LIBSTKCOMMS)
 
-find_package(LIBBAROBO)
-include_directories(${LIBBAROBO_INCLUDE_DIRS})
+set(VERSION_MAJOR 0)
+set(VERSION_MINOR 0)
+set(VERSION_PATCH 0)
+set(VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
+
+set(PUBLIC_INCLUDE_DIR ".")
 
 if(CMAKE_HOST_WIN32)
   # FIXME hack--put these cmake scripts in a proper place (we need a
@@ -49,3 +49,6 @@ else(CMAKE_HOST_WIN32)
   install(FILES libstkcomms.h DESTINATION include)
 endif(CMAKE_HOST_WIN32)
 
+get_filename_component(${PROJECT_NAME}_INCLUDE_DIRS ${PUBLIC_INCLUDE_DIR} ABSOLUTE CACHE)
+set(${PROJECT_NAME}_LIBRARIES stkcomms CACHE INTERNAL "")
+set(${PROJECT_NAME}_VERSION ${VERSION} CACHE INTERNAL "")
