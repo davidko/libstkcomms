@@ -150,6 +150,7 @@ int CStkComms::programAll(const char* hexFileName, int hwRev)
   }
 	stkComms_setProgress(_comms, hwRev ? 1.1 : 1.0);
 	stkComms_setProgramComplete(_comms, 1);
+
   return 0;  
 }
 
@@ -157,16 +158,24 @@ struct programAllThreadArg{
   const char* hexFileName;
   CStkComms* stkComms;
   int hwRev;
+  bool disconnect_and_delete;
 };
 
 void* programAllThread(void* arg)
 {
   programAllThreadArg *a = (programAllThreadArg*)arg;
   a->stkComms->programAll(a->hexFileName, a->hwRev);
+  if (a->disconnect_and_delete) {
+    a->stkComms->disconnect();
+    delete a->stkComms;
+  }
   return NULL;
 }
 
-int CStkComms::programAllAsync(const char* hexFileName, int hwRev)
+int CStkComms::programAllAsync(const char* hexFileName, int hwRev,
+    stkComms_progressCallbackFunc progressCallback,
+    stkComms_completionCallbackFunc completionCallback,
+    int flags)
 {
   THREAD_T thread;
   struct programAllThreadArg *a;
@@ -174,7 +183,10 @@ int CStkComms::programAllAsync(const char* hexFileName, int hwRev)
   a->hexFileName = hexFileName;
   a->stkComms = this;
   a->hwRev = hwRev;
+  a->disconnect_and_delete = DISCONNECT_AND_DELETE & flags;
 	stkComms_setProgress(_comms, 0.01);
+  stkComms_setProgressCallback(_comms, progressCallback);
+  stkComms_setCompletionCallback(_comms, completionCallback);
   THREAD_CREATE(&thread, programAllThread, a);
   return 0;
 }

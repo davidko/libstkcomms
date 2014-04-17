@@ -40,8 +40,14 @@ typedef struct bdaddr_s {
   UINT8 b[6];
 } bdaddr_t;
 */
+#if __cplusplus
+extern "C" {
+#endif
 void baswap(bdaddr_t *dst, const bdaddr_t *src);
 int str2ba(const char *str, bdaddr_t *ba);
+#if __cplusplus
+}
+#endif
 #endif
 #include "thread_macros.h"
 
@@ -59,6 +65,9 @@ typedef enum connection_type_e
   CONNECT_TTY
 } connection_type_t;
 
+typedef void (*stkComms_progressCallbackFunc) (double progress);
+typedef void (*stkComms_completionCallbackFunc) (int status);
+
 #ifdef BUILD_CSTKCOMMS
 typedef struct stkComms_s
 {
@@ -75,6 +84,9 @@ typedef struct stkComms_s
   COND_T* progressCond;
   double progress;
   char* lockfileName;
+
+  stkComms_progressCallbackFunc progressCallback;
+  stkComms_completionCallbackFunc completionCallback;
 
   robot_type_t formFactor;
   connection_type_t connectionType;
@@ -119,6 +131,10 @@ int stkComms_disconnect(stkComms_t* comms);
 int stkComms_setSocket(stkComms_t* comms, int socket);
 double stkComms_getProgress(stkComms_t* comms);
 void stkComms_setProgress(stkComms_t* comms, double progress);
+void stkComms_setProgressCallback(stkComms_t* comms,
+    stkComms_progressCallbackFunc progressCallback);
+void stkComms_setCompletionCallback(stkComms_t* comms,
+    stkComms_completionCallbackFunc completionCallback);
 int stkComms_isProgramComplete(stkComms_t* comms); 
 void stkComms_setProgramComplete(stkComms_t* comms, int complete);
 int stkComms_handshake(stkComms_t* comms);

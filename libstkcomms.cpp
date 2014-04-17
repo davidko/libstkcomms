@@ -32,7 +32,7 @@
 #ifdef ENABLE_BLUETOOTH
 #pragma comment(lib, "ws2_32.lib")
 #include <basetyps.h>
-#include <Ws2bth.h>
+#include <ws2bth.h>
 #endif
 #endif
 #include "libstkcomms.hpp"
@@ -66,6 +66,10 @@ int stkComms_init(stkComms_t* comms)
   MUTEX_INIT(comms->progressLock);
   COND_NEW(comms->progressCond);
   COND_INIT(comms->progressCond);
+
+  comms->progressCallback = 0;
+  comms->completionCallback = 0;
+
   return 0;
 }
 
@@ -380,6 +384,20 @@ void stkComms_setProgress(stkComms_t* comms, double progress)
 	comms->progress = progress;
   COND_SIGNAL(comms->progressCond);
   MUTEX_UNLOCK(comms->progressLock);
+
+  if (comms->progressCallback) {
+    comms->progressCallback(progress);
+  }
+}
+
+void stkComms_setProgressCallback(stkComms_t* comms,
+    stkComms_progressCallbackFunc cb) {
+  comms->progressCallback = cb;
+}
+
+void stkComms_setCompletionCallback(stkComms_t* comms,
+    stkComms_completionCallbackFunc cb) {
+  comms->completionCallback = cb;
 }
 
 int stkComms_isProgramComplete(stkComms_t* comms) 
@@ -390,6 +408,10 @@ int stkComms_isProgramComplete(stkComms_t* comms)
 void stkComms_setProgramComplete(stkComms_t* comms, int complete)
 {
 	comms->programComplete = complete;
+
+  if (comms->completionCallback) {
+    comms->completionCallback(complete);
+  }
 }
 
 int stkComms_handshake(stkComms_t* comms)

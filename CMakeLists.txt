@@ -9,6 +9,7 @@ set(VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
 set(PUBLIC_INCLUDE_DIR ".")
 
 if(CMAKE_HOST_WIN32)
+  include_directories("/home/harris/.local/share/wineprefixes/psdkwin7/drive_c/Program Files/Microsoft SDKs/Windows/v7.0/Include")
   # FIXME hack--put these cmake scripts in a proper place (we need a
   # barobo_common repo) 
 
