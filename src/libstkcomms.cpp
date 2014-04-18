@@ -103,6 +103,7 @@ int stkComms_init(stkComms_t* comms)
 
   comms->progressCallback = 0;
   comms->completionCallback = 0;
+  comms->user_data = 0;
 
   return 0;
 }
@@ -420,18 +421,17 @@ void stkComms_setProgress(stkComms_t* comms, double progress)
   MUTEX_UNLOCK(comms->progressLock);
 
   if (comms->progressCallback) {
-    comms->progressCallback(progress);
+    comms->progressCallback(progress, comms->user_data);
   }
 }
 
-void stkComms_setProgressCallback(stkComms_t* comms,
-    stkComms_progressCallbackFunc cb) {
-  comms->progressCallback = cb;
-}
-
-void stkComms_setCompletionCallback(stkComms_t* comms,
-    stkComms_completionCallbackFunc cb) {
-  comms->completionCallback = cb;
+void stkComms_setProgressAndCompletionCallbacks(stkComms_t* comms,
+    stkComms_progressCallbackFunc pcb,
+    stkComms_completionCallbackFunc ccb,
+    void* user_data) {
+  comms->progressCallback = pcb;
+  comms->completionCallback = ccb;
+  comms->user_data = user_data;
 }
 
 int stkComms_isProgramComplete(stkComms_t* comms) 
@@ -444,7 +444,7 @@ void stkComms_setProgramComplete(stkComms_t* comms, int complete)
 	comms->programComplete = complete;
 
   if (comms->completionCallback) {
-    comms->completionCallback(complete);
+    comms->completionCallback(complete, comms->user_data);
   }
 }
 

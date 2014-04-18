@@ -175,6 +175,7 @@ void* programAllThread(void* arg)
 int CStkComms::programAllAsync(const char* hexFileName, int hwRev,
     stkComms_progressCallbackFunc progressCallback,
     stkComms_completionCallbackFunc completionCallback,
+    void* user_data,
     int flags)
 {
   THREAD_T thread;
@@ -185,8 +186,8 @@ int CStkComms::programAllAsync(const char* hexFileName, int hwRev,
   a->hwRev = hwRev;
   a->disconnect_and_delete = DISCONNECT_AND_DELETE & flags;
 	stkComms_setProgress(_comms, 0.01);
-  stkComms_setProgressCallback(_comms, progressCallback);
-  stkComms_setCompletionCallback(_comms, completionCallback);
+  stkComms_setProgressAndCompletionCallbacks(_comms, progressCallback,
+      completionCallback, user_data);
   THREAD_CREATE(&thread, programAllThread, a);
   return 0;
 }

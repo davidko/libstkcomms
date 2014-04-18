@@ -50,8 +50,8 @@ typedef enum connection_type_e
   CONNECT_TTY
 } connection_type_t;
 
-typedef void (*stkComms_progressCallbackFunc) (double progress);
-typedef void (*stkComms_completionCallbackFunc) (int status);
+typedef void (*stkComms_progressCallbackFunc) (double progress, void* user_data);
+typedef void (*stkComms_completionCallbackFunc) (int status, void* user_data);
 
 #ifdef BUILD_CSTKCOMMS
 #include "thread_macros.h"
@@ -73,6 +73,7 @@ typedef struct stkComms_s
 
   stkComms_progressCallbackFunc progressCallback;
   stkComms_completionCallbackFunc completionCallback;
+  void* user_data;
 
   robot_type_t formFactor;
   connection_type_t connectionType;
@@ -117,10 +118,10 @@ int stkComms_disconnect(stkComms_t* comms);
 int stkComms_setSocket(stkComms_t* comms, int socket);
 double stkComms_getProgress(stkComms_t* comms);
 void stkComms_setProgress(stkComms_t* comms, double progress);
-void stkComms_setProgressCallback(stkComms_t* comms,
-    stkComms_progressCallbackFunc progressCallback);
-void stkComms_setCompletionCallback(stkComms_t* comms,
-    stkComms_completionCallbackFunc completionCallback);
+void stkComms_setProgressAndCompletionCallbacks(stkComms_t* comms,
+    stkComms_progressCallbackFunc progressCallback,
+    stkComms_completionCallbackFunc completionCallback,
+    void* user_data);
 int stkComms_isProgramComplete(stkComms_t* comms); 
 void stkComms_setProgramComplete(stkComms_t* comms, int complete);
 int stkComms_handshake(stkComms_t* comms);

@@ -47,6 +47,7 @@ class CStkComms
   int programAllAsync(const char* hexFileName, int hwRev = 0,
       stkComms_progressCallbackFunc progressCallback = 0,
       stkComms_completionCallbackFunc completionCallback = 0,
+      void* user_data = 0,
       int flags = NO_FLAGS);
   double getProgress();
   int isProgramComplete();
