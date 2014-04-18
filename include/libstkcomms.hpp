@@ -10,20 +10,8 @@
 #endif
 #else
 #include <winsock2.h>
-//#include <winsock2.h>
 typedef unsigned char uint8_t;
-#define uint16_t UINT16
-#include "bdaddr.h"
-#ifdef __cplusplus
-extern "C" {
 #endif
-void baswap(bdaddr_t *dst, const bdaddr_t *src);
-int str2ba(const char *str, bdaddr_t *ba);
-#if __cplusplus
-}
-#endif
-#endif
-#include "thread_macros.h"
 #include "libstkcomms.h"
 
 class CHexFile

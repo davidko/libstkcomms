@@ -394,33 +394,3 @@ void CHexFile::parseLine(const char* line)
 void libstkcomms_is_present(void)
 {
 }
-
-#ifdef _WIN32
-void baswap(bdaddr_t *dst, const bdaddr_t *src)
-{
-	register unsigned char *d = (unsigned char *) dst;
-	register const unsigned char *s = (const unsigned char *) src;
-	register int i;
-
-	for (i = 0; i < 6; i++)
-		d[i] = s[5-i];
-}
-
-int str2ba(const char *str, bdaddr_t *ba)
-{
-	UINT8 b[6];
-	const char *ptr = str;
-	int i;
-
-	for (i = 0; i < 6; i++) {
-		b[i] = (UINT8) strtol(ptr, NULL, 16);
-		if (i != 5 && !(ptr = strchr(ptr, ':')))
-			ptr = ":00:00:00:00:00";
-		ptr++;
-	}
-
-	baswap(ba, (bdaddr_t *) b);
-
-	return 0;
-}
-#endif

@@ -17,6 +17,9 @@
 
 #ifndef _LIBSTKCOMMS_H_
 #define _LIBSTKCOMMS_H_
+
+#include <stdint.h>
+
 #ifndef _WIN32
 #include <unistd.h>
 #include <sys/types.h>
@@ -24,8 +27,6 @@
 #ifndef __MACH__
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/rfcomm.h>
-#else
-#include <stdint.h>
 #endif
 #else
 #include <winsock2.h>
@@ -33,23 +34,7 @@
 #include <basetyps.h>
 #include <ws2bth.h>
 #endif
-typedef unsigned char uint8_t;
-#define uint16_t UINT16
-/*
-typedef struct bdaddr_s {
-  UINT8 b[6];
-} bdaddr_t;
-*/
-#if __cplusplus
-extern "C" {
 #endif
-void baswap(bdaddr_t *dst, const bdaddr_t *src);
-int str2ba(const char *str, bdaddr_t *ba);
-#if __cplusplus
-}
-#endif
-#endif
-#include "thread_macros.h"
 
 typedef enum robot_type_e
 {
@@ -69,6 +54,7 @@ typedef void (*stkComms_progressCallbackFunc) (double progress);
 typedef void (*stkComms_completionCallbackFunc) (int status);
 
 #ifdef BUILD_CSTKCOMMS
+#include "thread_macros.h"
 typedef struct stkComms_s
 {
   int socket;

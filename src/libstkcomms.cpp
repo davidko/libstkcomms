@@ -46,6 +46,40 @@
 //#endif
 //#define VERBOSE
 
+#if _WIN32 && defined(ENABLE_BLUETOOTH)
+typedef struct bdaddr_s {
+  UINT8 b[6];
+} bdaddr_t;
+
+static void baswap(bdaddr_t *dst, const bdaddr_t *src)
+{
+	register unsigned char *d = (unsigned char *) dst;
+	register const unsigned char *s = (const unsigned char *) src;
+	register int i;
+
+	for (i = 0; i < 6; i++)
+		d[i] = s[5-i];
+}
+
+static int str2ba(const char *str, bdaddr_t *ba)
+{
+	UINT8 b[6];
+	const char *ptr = str;
+	int i;
+
+	for (i = 0; i < 6; i++) {
+		b[i] = (UINT8) strtol(ptr, NULL, 16);
+		if (i != 5 && !(ptr = strchr(ptr, ':')))
+			ptr = ":00:00:00:00:00";
+		ptr++;
+	}
+
+	baswap(ba, (bdaddr_t *) b);
+
+	return 0;
+}
+#endif
+
 
 stkComms_t* stkComms_new()
 {
@@ -196,6 +230,7 @@ int stkComms_connect(stkComms_t* comms, const char addr[])
 #if defined (_WIN32) or defined (_MSYS)
 int stkComms_connectWithTTY(stkComms_t* comms, const char* ttyfilename)
 {
+  printf("fux STK connecting with tty\n");
   int rc;
   /* Check the file name. If we receive something like "COM45", we want to
    * change it to "\\.\COM45" */
@@ -1007,40 +1042,6 @@ int stkComms_setdtr (stkComms_t* comms, int on)
   return 0;
 #endif
 } 
-
-#if 0
-#ifdef _WIN32
-#ifdef ENABLE_BLUETOOTH
-void baswap(bdaddr_t *dst, const bdaddr_t *src)
-{
-	register unsigned char *d = (unsigned char *) dst;
-	register const unsigned char *s = (const unsigned char *) src;
-	register int i;
-
-	for (i = 0; i < 6; i++)
-		d[i] = s[5-i];
-}
-
-int str2ba(const char *str, bdaddr_t *ba)
-{
-	UINT8 b[6];
-	const char *ptr = str;
-	int i;
-
-	for (i = 0; i < 6; i++) {
-		b[i] = (UINT8) strtol(ptr, NULL, 16);
-		if (i != 5 && !(ptr = strchr(ptr, ':')))
-			ptr = ":00:00:00:00:00";
-		ptr++;
-	}
-
-	baswap(ba, (bdaddr_t *) b);
-
-	return 0;
-}
-#endif
-#endif
-#endif
 
 hexFile_t* hexFile_new()
 {
