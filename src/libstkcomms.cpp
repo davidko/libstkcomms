@@ -230,7 +230,6 @@ int stkComms_connect(stkComms_t* comms, const char addr[])
 #if defined (_WIN32) or defined (_MSYS)
 int stkComms_connectWithTTY(stkComms_t* comms, const char* ttyfilename)
 {
-  printf("fux STK connecting with tty\n");
   int rc;
   /* Check the file name. If we receive something like "COM45", we want to
    * change it to "\\.\COM45" */
