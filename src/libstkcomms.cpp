@@ -32,7 +32,7 @@
 #ifdef ENABLE_BLUETOOTH
 #pragma comment(lib, "ws2_32.lib")
 #include <basetyps.h>
-#include <Ws2bth.h>
+#include <ws2bth.h>
 #endif
 #endif
 #include "libstkcomms.hpp"
@@ -45,6 +45,40 @@
 #define THROW 
 //#endif
 //#define VERBOSE
+
+#if _WIN32 && defined(ENABLE_BLUETOOTH)
+typedef struct bdaddr_s {
+  UINT8 b[6];
+} bdaddr_t;
+
+static void baswap(bdaddr_t *dst, const bdaddr_t *src)
+{
+	register unsigned char *d = (unsigned char *) dst;
+	register const unsigned char *s = (const unsigned char *) src;
+	register int i;
+
+	for (i = 0; i < 6; i++)
+		d[i] = s[5-i];
+}
+
+static int str2ba(const char *str, bdaddr_t *ba)
+{
+	UINT8 b[6];
+	const char *ptr = str;
+	int i;
+
+	for (i = 0; i < 6; i++) {
+		b[i] = (UINT8) strtol(ptr, NULL, 16);
+		if (i != 5 && !(ptr = strchr(ptr, ':')))
+			ptr = ":00:00:00:00:00";
+		ptr++;
+	}
+
+	baswap(ba, (bdaddr_t *) b);
+
+	return 0;
+}
+#endif
 
 
 stkComms_t* stkComms_new()
@@ -66,6 +100,11 @@ int stkComms_init(stkComms_t* comms)
   MUTEX_INIT(comms->progressLock);
   COND_NEW(comms->progressCond);
   COND_INIT(comms->progressCond);
+
+  comms->progressCallback = 0;
+  comms->completionCallback = 0;
+  comms->user_data = 0;
+
   return 0;
 }
 
@@ -376,7 +415,23 @@ double stkComms_getProgress(stkComms_t* comms)
 
 void stkComms_setProgress(stkComms_t* comms, double progress)
 {
+  MUTEX_LOCK(comms->progressLock);
 	comms->progress = progress;
+  COND_SIGNAL(comms->progressCond);
+  MUTEX_UNLOCK(comms->progressLock);
+
+  if (comms->progressCallback) {
+    comms->progressCallback(progress, comms->user_data);
+  }
+}
+
+void stkComms_setProgressAndCompletionCallbacks(stkComms_t* comms,
+    stkComms_progressCallbackFunc pcb,
+    stkComms_completionCallbackFunc ccb,
+    void* user_data) {
+  comms->progressCallback = pcb;
+  comms->completionCallback = ccb;
+  comms->user_data = user_data;
 }
 
 int stkComms_isProgramComplete(stkComms_t* comms) 
@@ -387,6 +442,10 @@ int stkComms_isProgramComplete(stkComms_t* comms)
 void stkComms_setProgramComplete(stkComms_t* comms, int complete)
 {
 	comms->programComplete = complete;
+
+  if (comms->completionCallback) {
+    comms->completionCallback(complete, comms->user_data);
+  }
 }
 
 int stkComms_handshake(stkComms_t* comms)
@@ -664,10 +723,7 @@ int stkComms_progHexFile(stkComms_t* comms, const char* filename)
     stkComms_progPage(comms, buf, i);
     address += pageSize/2;
     /* Update the progress tracker */
-    MUTEX_LOCK(comms->progressLock);
-    comms->progress = 0.5 * ((double)address*2) / (double)hexFile_len(file);
-    COND_SIGNAL(comms->progressCond);
-    MUTEX_UNLOCK(comms->progressLock);
+    stkComms_setProgress(comms, 0.5 * ((double)address*2) / (double)hexFile_len(file));
   }
   hexFile_destroy(file);
   free(file);
@@ -697,15 +753,9 @@ int stkComms_checkFlash(stkComms_t* comms, const char* filename)
       return -1;
     }
     /* Update the progress tracker */
-    MUTEX_LOCK(comms->progressLock);
-    comms->progress = 0.5 + 0.5 * ((double)i*2) / (double)hexFile_len(hf);
-    COND_SIGNAL(comms->progressCond);
-    MUTEX_UNLOCK(comms->progressLock);
+    stkComms_setProgress(comms, 0.5 + 0.5 * ((double)i*2) / (double)hexFile_len(hf));
   }
-  MUTEX_LOCK(comms->progressLock);
-  comms->progress = 1;
-  COND_SIGNAL(comms->progressCond);
-  MUTEX_UNLOCK(comms->progressLock);
+  stkComms_setProgress(comms, 1);
   return 0;
 }
 
@@ -991,40 +1041,6 @@ int stkComms_setdtr (stkComms_t* comms, int on)
   return 0;
 #endif
 } 
-
-#if 0
-#ifdef _WIN32
-#ifdef ENABLE_BLUETOOTH
-void baswap(bdaddr_t *dst, const bdaddr_t *src)
-{
-	register unsigned char *d = (unsigned char *) dst;
-	register const unsigned char *s = (const unsigned char *) src;
-	register int i;
-
-	for (i = 0; i < 6; i++)
-		d[i] = s[5-i];
-}
-
-int str2ba(const char *str, bdaddr_t *ba)
-{
-	UINT8 b[6];
-	const char *ptr = str;
-	int i;
-
-	for (i = 0; i < 6; i++) {
-		b[i] = (UINT8) strtol(ptr, NULL, 16);
-		if (i != 5 && !(ptr = strchr(ptr, ':')))
-			ptr = ":00:00:00:00:00";
-		ptr++;
-	}
-
-	baswap(ba, (bdaddr_t *) b);
-
-	return 0;
-}
-#endif
-#endif
-#endif
 
 hexFile_t* hexFile_new()
 {

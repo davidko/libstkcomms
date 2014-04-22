@@ -10,17 +10,11 @@
 #endif
 #else
 #include <winsock2.h>
-//#include <winsock2.h>
 typedef unsigned char uint8_t;
-#define uint16_t UINT16
-typedef struct bdaddr_s {
-  UINT8 b[6];
-} bdaddr_t;
-void baswap(bdaddr_t *dst, const bdaddr_t *src);
-int str2ba(const char *str, bdaddr_t *ba);
 #endif
-#include "thread_macros.h"
 #include "libstkcomms.h"
+
+#include <string>
 
 class CHexFile
 {
@@ -40,15 +34,23 @@ class CHexFile
 class CStkComms
 {
   public:
+  /* Flags for use with programAllAsync */
+  enum {
+    NO_FLAGS,
+    DISCONNECT_AND_DELETE
+  };
+
   CStkComms();
   ~CStkComms();
   int connect(const char addr[]);
   int connectWithTTY(const char* ttyfilename);
   int setSocket(int socket);
-  int programAll(const char* hexFileName);
-  int programAll(const char* hexFileName, int hwRev);
-  int programAllAsync(const char* hexFileName);
-  int programAllAsync(const char* hexFileName, int hwRev);
+  int programAll(const char* hexFileName, int hwRev = 0);
+  int programAllAsync(std::string hexFileName, int hwRev = 0,
+      stkComms_progressCallbackFunc progressCallback = 0,
+      stkComms_completionCallbackFunc completionCallback = 0,
+      void* user_data = 0,
+      int flags = NO_FLAGS);
   double getProgress();
   int isProgramComplete();
   int disconnect();

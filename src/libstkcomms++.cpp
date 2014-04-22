@@ -77,76 +77,46 @@ int CStkComms::setSocket(int socket)
   return stkComms_setSocket(_comms, socket);
 }
 
-int CStkComms::programAll(const char* hexFileName)
-{
-  if(handshake()) {
-    THROW;
-    return -1;
-  }
-  if(setDevice()) {
-    THROW;
-    return -1;
-  }
-  if(setDeviceExt()) {
-    THROW;
-    return -1;
-  }
-  if(enterProgMode()) {
-    THROW;
-    return -1;
-  }
-  if(checkSignature()) {
-    THROW;
-    return -1;
-  }
-  /*
-  if(progFuses()) {
-    THROW;
-    return -1;
-  }
-  */
-  if(progHexFile(hexFileName)) {
-    THROW;
-    return -1;
-  }
-  if(checkFlash(hexFileName)) {
-    THROW;
-    return -1;
-  }
-  if(leaveProgMode()) {
-    THROW;
-    return -1;
-  }
-	stkComms_setProgress(_comms, 1.0);
-	stkComms_setProgramComplete(_comms, 1);
-  return 0;  
-}
-
 int CStkComms::programAll(const char* hexFileName, int hwRev)
 {
   if(handshake()) {
     THROW;
-    printf("programming failed %s:%d\n", __FILE__, __LINE__);
+    if (hwRev) {
+      printf("programming failed %s:%d\n", __FILE__, __LINE__);
+    }
+    stkComms_setProgramComplete(_comms, 0);
     return -1;
   }
   if(setDevice()) {
     THROW;
-    printf("programming failed %s:%d\n", __FILE__, __LINE__);
+    if (hwRev) {
+      printf("programming failed %s:%d\n", __FILE__, __LINE__);
+    }
+    stkComms_setProgramComplete(_comms, 0);
     return -1;
   }
   if(setDeviceExt()) {
     THROW;
-    printf("programming failed %s:%d\n", __FILE__, __LINE__);
+    if (hwRev) {
+      printf("programming failed %s:%d\n", __FILE__, __LINE__);
+    }
+    stkComms_setProgramComplete(_comms, 0);
     return -1;
   }
   if(enterProgMode()) {
     THROW;
-    printf("programming failed %s:%d\n", __FILE__, __LINE__);
+    if (hwRev) {
+      printf("programming failed %s:%d\n", __FILE__, __LINE__);
+    }
+    stkComms_setProgramComplete(_comms, 0);
     return -1;
   }
   if(checkSignature()) {
     THROW;
-    printf("programming failed %s:%d\n", __FILE__, __LINE__);
+    if (hwRev) {
+      printf("programming failed %s:%d\n", __FILE__, __LINE__);
+    }
+    stkComms_setProgramComplete(_comms, 0);
     return -1;
   }
   /*
@@ -155,70 +125,77 @@ int CStkComms::programAll(const char* hexFileName, int hwRev)
     return -1;
   }
   */
-  if(progFuses()) {
-    THROW;
-    printf("programming failed %s:%d\n", __FILE__, __LINE__);
-    return -1;
+  if (hwRev) {
+    if(progFuses()) {
+      THROW;
+      printf("programming failed %s:%d\n", __FILE__, __LINE__);
+      stkComms_setProgramComplete(_comms, 0);
+      return -1;
+    }
   }
   if(progHexFile(hexFileName)) {
     THROW;
-    printf("programming failed %s:%d\n", __FILE__, __LINE__);
+    if (hwRev) {
+      printf("programming failed %s:%d\n", __FILE__, __LINE__);
+    }
+    stkComms_setProgramComplete(_comms, 0);
     return -1;
   }
   if(checkFlash(hexFileName)) {
     THROW;
-    printf("programming failed %s:%d\n", __FILE__, __LINE__);
+    if (hwRev) {
+      printf("programming failed %s:%d\n", __FILE__, __LINE__);
+    }
+    stkComms_setProgramComplete(_comms, 0);
     return -1;
   }
   if(leaveProgMode()) {
     THROW;
-    printf("programming failed %s:%d\n", __FILE__, __LINE__);
+    if (hwRev) {
+      printf("programming failed %s:%d\n", __FILE__, __LINE__);
+    }
+    stkComms_setProgramComplete(_comms, 0);
     return -1;
   }
-	stkComms_setProgress(_comms, 1.1);
+	stkComms_setProgress(_comms, hwRev ? 1.1 : 1.0);
 	stkComms_setProgramComplete(_comms, 1);
+
   return 0;  
 }
 
 struct programAllThreadArg{
-  const char* hexFileName;
+  std::string hexFileName;
   CStkComms* stkComms;
   int hwRev;
+  bool disconnect_and_delete;
 };
 
 void* programAllThread(void* arg)
 {
   programAllThreadArg *a = (programAllThreadArg*)arg;
-  if(a->hwRev == 0) {
-    a->stkComms->programAll(a->hexFileName);
-  } else {
-    a->stkComms->programAll(a->hexFileName, a->hwRev);
+  a->stkComms->programAll(a->hexFileName.c_str(), a->hwRev);
+  if (a->disconnect_and_delete) {
+    a->stkComms->disconnect();
+    delete a->stkComms;
   }
   return NULL;
 }
 
-int CStkComms::programAllAsync(const char* hexFileName)
+int CStkComms::programAllAsync(std::string hexFileName, int hwRev,
+    stkComms_progressCallbackFunc progressCallback,
+    stkComms_completionCallbackFunc completionCallback,
+    void* user_data,
+    int flags)
 {
   THREAD_T thread;
-  struct programAllThreadArg *a;
-  a = (struct programAllThreadArg*)malloc(sizeof(struct programAllThreadArg));
-  a->hexFileName = hexFileName;
-  a->stkComms = this;
-  a->hwRev = 0;
-	stkComms_setProgress(_comms, 0.01);
-  THREAD_CREATE(&thread, programAllThread, a);
-  return 0;
-}
-
-int CStkComms::programAllAsync(const char* hexFileName, int hwRev)
-{
-  THREAD_T thread;
-  struct programAllThreadArg *a;
-  a = (struct programAllThreadArg*)malloc(sizeof(struct programAllThreadArg));
+  struct programAllThreadArg *a = new programAllThreadArg;
   a->hexFileName = hexFileName;
   a->stkComms = this;
   a->hwRev = hwRev;
+  a->disconnect_and_delete = DISCONNECT_AND_DELETE & flags;
 	stkComms_setProgress(_comms, 0.01);
+  stkComms_setProgressAndCompletionCallbacks(_comms, progressCallback,
+      completionCallback, user_data);
   THREAD_CREATE(&thread, programAllThread, a);
   return 0;
 }
@@ -426,33 +403,3 @@ void CHexFile::parseLine(const char* line)
 void libstkcomms_is_present(void)
 {
 }
-
-#ifdef _WIN32
-void baswap(bdaddr_t *dst, const bdaddr_t *src)
-{
-	register unsigned char *d = (unsigned char *) dst;
-	register const unsigned char *s = (const unsigned char *) src;
-	register int i;
-
-	for (i = 0; i < 6; i++)
-		d[i] = s[5-i];
-}
-
-int str2ba(const char *str, bdaddr_t *ba)
-{
-	UINT8 b[6];
-	const char *ptr = str;
-	int i;
-
-	for (i = 0; i < 6; i++) {
-		b[i] = (UINT8) strtol(ptr, NULL, 16);
-		if (i != 5 && !(ptr = strchr(ptr, ':')))
-			ptr = ":00:00:00:00:00";
-		ptr++;
-	}
-
-	baswap(ba, (bdaddr_t *) b);
-
-	return 0;
-}
-#endif

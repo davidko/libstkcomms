@@ -17,6 +17,9 @@
 
 #ifndef _LIBSTKCOMMS_H_
 #define _LIBSTKCOMMS_H_
+
+#include <stdint.h>
+
 #ifndef _WIN32
 #include <unistd.h>
 #include <sys/types.h>
@@ -24,8 +27,6 @@
 #ifndef __MACH__
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/rfcomm.h>
-#else
-#include <stdint.h>
 #endif
 #else
 #include <winsock2.h>
@@ -33,17 +34,7 @@
 #include <basetyps.h>
 #include <ws2bth.h>
 #endif
-typedef unsigned char uint8_t;
-#define uint16_t UINT16
-/*
-typedef struct bdaddr_s {
-  UINT8 b[6];
-} bdaddr_t;
-*/
-void baswap(bdaddr_t *dst, const bdaddr_t *src);
-int str2ba(const char *str, bdaddr_t *ba);
 #endif
-#include "thread_macros.h"
 
 typedef enum robot_type_e
 {
@@ -59,7 +50,11 @@ typedef enum connection_type_e
   CONNECT_TTY
 } connection_type_t;
 
+typedef void (*stkComms_progressCallbackFunc) (double progress, void* user_data);
+typedef void (*stkComms_completionCallbackFunc) (int status, void* user_data);
+
 #ifdef BUILD_CSTKCOMMS
+#include "thread_macros.h"
 typedef struct stkComms_s
 {
   int socket;
@@ -75,6 +70,10 @@ typedef struct stkComms_s
   COND_T* progressCond;
   double progress;
   char* lockfileName;
+
+  stkComms_progressCallbackFunc progressCallback;
+  stkComms_completionCallbackFunc completionCallback;
+  void* user_data;
 
   robot_type_t formFactor;
   connection_type_t connectionType;
@@ -119,6 +118,10 @@ int stkComms_disconnect(stkComms_t* comms);
 int stkComms_setSocket(stkComms_t* comms, int socket);
 double stkComms_getProgress(stkComms_t* comms);
 void stkComms_setProgress(stkComms_t* comms, double progress);
+void stkComms_setProgressAndCompletionCallbacks(stkComms_t* comms,
+    stkComms_progressCallbackFunc progressCallback,
+    stkComms_completionCallbackFunc completionCallback,
+    void* user_data);
 int stkComms_isProgramComplete(stkComms_t* comms); 
 void stkComms_setProgramComplete(stkComms_t* comms, int complete);
 int stkComms_handshake(stkComms_t* comms);
