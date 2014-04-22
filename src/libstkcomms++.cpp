@@ -84,6 +84,7 @@ int CStkComms::programAll(const char* hexFileName, int hwRev)
     if (hwRev) {
       printf("programming failed %s:%d\n", __FILE__, __LINE__);
     }
+    stkComms_setProgramComplete(_comms, 0);
     return -1;
   }
   if(setDevice()) {
@@ -91,6 +92,7 @@ int CStkComms::programAll(const char* hexFileName, int hwRev)
     if (hwRev) {
       printf("programming failed %s:%d\n", __FILE__, __LINE__);
     }
+    stkComms_setProgramComplete(_comms, 0);
     return -1;
   }
   if(setDeviceExt()) {
@@ -98,6 +100,7 @@ int CStkComms::programAll(const char* hexFileName, int hwRev)
     if (hwRev) {
       printf("programming failed %s:%d\n", __FILE__, __LINE__);
     }
+    stkComms_setProgramComplete(_comms, 0);
     return -1;
   }
   if(enterProgMode()) {
@@ -105,6 +108,7 @@ int CStkComms::programAll(const char* hexFileName, int hwRev)
     if (hwRev) {
       printf("programming failed %s:%d\n", __FILE__, __LINE__);
     }
+    stkComms_setProgramComplete(_comms, 0);
     return -1;
   }
   if(checkSignature()) {
@@ -112,6 +116,7 @@ int CStkComms::programAll(const char* hexFileName, int hwRev)
     if (hwRev) {
       printf("programming failed %s:%d\n", __FILE__, __LINE__);
     }
+    stkComms_setProgramComplete(_comms, 0);
     return -1;
   }
   /*
@@ -124,6 +129,7 @@ int CStkComms::programAll(const char* hexFileName, int hwRev)
     if(progFuses()) {
       THROW;
       printf("programming failed %s:%d\n", __FILE__, __LINE__);
+      stkComms_setProgramComplete(_comms, 0);
       return -1;
     }
   }
@@ -132,6 +138,7 @@ int CStkComms::programAll(const char* hexFileName, int hwRev)
     if (hwRev) {
       printf("programming failed %s:%d\n", __FILE__, __LINE__);
     }
+    stkComms_setProgramComplete(_comms, 0);
     return -1;
   }
   if(checkFlash(hexFileName)) {
@@ -139,6 +146,7 @@ int CStkComms::programAll(const char* hexFileName, int hwRev)
     if (hwRev) {
       printf("programming failed %s:%d\n", __FILE__, __LINE__);
     }
+    stkComms_setProgramComplete(_comms, 0);
     return -1;
   }
   if(leaveProgMode()) {
@@ -146,6 +154,7 @@ int CStkComms::programAll(const char* hexFileName, int hwRev)
     if (hwRev) {
       printf("programming failed %s:%d\n", __FILE__, __LINE__);
     }
+    stkComms_setProgramComplete(_comms, 0);
     return -1;
   }
 	stkComms_setProgress(_comms, hwRev ? 1.1 : 1.0);
@@ -155,7 +164,7 @@ int CStkComms::programAll(const char* hexFileName, int hwRev)
 }
 
 struct programAllThreadArg{
-  const char* hexFileName;
+  std::string hexFileName;
   CStkComms* stkComms;
   int hwRev;
   bool disconnect_and_delete;
@@ -164,7 +173,7 @@ struct programAllThreadArg{
 void* programAllThread(void* arg)
 {
   programAllThreadArg *a = (programAllThreadArg*)arg;
-  a->stkComms->programAll(a->hexFileName, a->hwRev);
+  a->stkComms->programAll(a->hexFileName.c_str(), a->hwRev);
   if (a->disconnect_and_delete) {
     a->stkComms->disconnect();
     delete a->stkComms;
@@ -172,15 +181,14 @@ void* programAllThread(void* arg)
   return NULL;
 }
 
-int CStkComms::programAllAsync(const char* hexFileName, int hwRev,
+int CStkComms::programAllAsync(std::string hexFileName, int hwRev,
     stkComms_progressCallbackFunc progressCallback,
     stkComms_completionCallbackFunc completionCallback,
     void* user_data,
     int flags)
 {
   THREAD_T thread;
-  struct programAllThreadArg *a;
-  a = (struct programAllThreadArg*)malloc(sizeof(struct programAllThreadArg));
+  struct programAllThreadArg *a = new programAllThreadArg;
   a->hexFileName = hexFileName;
   a->stkComms = this;
   a->hwRev = hwRev;

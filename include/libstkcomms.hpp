@@ -14,6 +14,8 @@ typedef unsigned char uint8_t;
 #endif
 #include "libstkcomms.h"
 
+#include <string>
+
 class CHexFile
 {
   public:
@@ -44,7 +46,7 @@ class CStkComms
   int connectWithTTY(const char* ttyfilename);
   int setSocket(int socket);
   int programAll(const char* hexFileName, int hwRev = 0);
-  int programAllAsync(const char* hexFileName, int hwRev = 0,
+  int programAllAsync(std::string hexFileName, int hwRev = 0,
       stkComms_progressCallbackFunc progressCallback = 0,
       stkComms_completionCallbackFunc completionCallback = 0,
       void* user_data = 0,
