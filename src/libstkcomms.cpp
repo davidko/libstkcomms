@@ -15,7 +15,7 @@
    along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define ENABLE_BLUETOOTH
+//#define ENABLE_BLUETOOTH
 #include <stdlib.h>
 #include <errno.h>
 #include <fcntl.h>

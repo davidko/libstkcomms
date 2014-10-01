@@ -74,7 +74,7 @@ else()
   install(TARGETS ${TARGET} 
           LIBRARY DESTINATION lib
           ARCHIVE DESTINATION lib)
-  install(FILES libstkcomms.h DESTINATION include)
+  install(FILES include/libstkcomms.h DESTINATION include)
 endif()
 
 ##############################################################################
